@@ -138,7 +138,7 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
     } else {
         $listOfFiles = [string[]](Get-Files -FilePath $filePath -FileType $fileType)
 
-        $scriptPath = [string](Get-Location)
+        [string]$scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
         $backupPath = $scriptPath + "\backup"
         Backup-Files -StartPath $filePath -ListOfFiles $listOfFiles -BackupPath $backupPath
 
@@ -147,3 +147,5 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         Write-Host "Complete"
     }
 }
+
+Read-Host "Press enter to continue"
