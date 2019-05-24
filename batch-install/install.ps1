@@ -14,6 +14,7 @@ function Install-Without-Arguments {
     }
 }
 
+# install file with arguments
 function Install-With-Arguments {
     param ([string]$FilePath, [string[]]$ArgumentList)
     begin {Write-Host "Installing" $FilePath}
