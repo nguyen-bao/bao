@@ -11,42 +11,31 @@ function Get-Files {
     end {Write-Host "Done"}
 }
 
-# # backup files in ListOfFiles into Destination
-function Backup-Files {
-    param([string]$StartPath, [string[]]$ListOfFiles, [string]$BackupPath)
-    begin {Write-Host "Backing up Files..."}
-    process{
-        if ((Test-Path $BackupPath) -eq $true) {
-            $count = 1
-            $NewBackupPath = $BackupPath + " (" + [string]$count + ")"
-
-            while ((Test-Path $NewBackupPath) -eq $true) {
-                $count = $count + 1
-                $NewBackupPath = $BackupPath + " (" + [string]$count + ")"
-            }
-            $BackupPath = $NewBackupPath
-        }
-
-        foreach($file in $ListOfFiles) {
-            $destinationPath = $BackupPath + $file.Substring($StartPath.length)
-            Write-Host $file " ---> " $destinationPath
-
-            New-Item -Path $destinationPath -Force
-            Copy-Item -Path $file -Destination $destinationPath
-        }
-    }
-
-    end{Write-Host "Done"}
+# backup file into BackupPath maintaining file structure
+function Backup-File {
+	param([string]$StartPath, [string]$FilePath, [string]$BackupPath)
+	process {
+		$destinationPath = $BackupPath + $FilePath.Substring($StartPath.length)
+		Write-Host "Backing up" $FilePath "--->" $destinationPath
+		
+		New-Item -Path $destinationPath -Force
+        Copy-Item -Path $FilePath -Destination $destinationPath
+	}
 }
 
+# Replace replaceWhat with replaceWith
 function ReplaceLines {
-    param([string[]]$ListOfFiles, [string]$replaceWhat, [string]$replaceWith)
+    param([string]$StartPath, [string]$BackupPath, [string[]]$ListOfFiles, [string]$replaceWhat, [string]$replaceWith)
     begin {Write-Host "Replacing Lines..."}
     process {
         foreach($file in $ListOfFiles) {
-            Write-Host $file
-
-            (Get-Content $file) -replace $replaceWhat, $replaceWith | Set-Content $file
+			$fileContent = (Get-Content $file)
+			if ($fileContent -match $replaceWhat) {
+				Backup-File -StartPath $StartPath -FilePath $file -BackupPath $BackupPath
+				
+				Write-Host "Replacing" $file
+				$fileContent -replace $replaceWhat, $replaceWith | Set-Content $file
+			}
         }
     }
     end {Write-Host "Done"}
@@ -140,9 +129,16 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
 
         [string]$scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
         $backupPath = $scriptPath + "\backup"
-        Backup-Files -StartPath $filePath -ListOfFiles $listOfFiles -BackupPath $backupPath
+		
+		$count = 0
+		$newBackupPath = $backupPath
+		while ((Test-Path $NewBackupPath) -eq $true) {
+			$count = $count + 1
+			$newBackupPath = $backupPath + " (" + [string]$count + ")"
+		}
+		$backupPath = $newBackupPath
 
-        ReplaceLines -ListOfFiles $listOfFiles -ReplaceWhat $replaceWhat -ReplaceWith $replaceWith
+        ReplaceLines -StartPath $filePath -BackupPath $backupPath -ListOfFiles $listOfFiles -ReplaceWhat $replaceWhat -ReplaceWith $replaceWith
 
         Write-Host "Complete"
     }
